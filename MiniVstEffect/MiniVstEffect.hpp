@@ -2,12 +2,22 @@
 #define	HWM_MINIVSTEFFECT_MINIVSTEFFECT_HPP
 
 #include "./vst_header_include.hpp"
-#include <memory>
-
-AudioEffect *
-		createEffectInstance(audioMasterCallback audioMaster);
+#include <string>
 
 namespace hwm {
+
+//! 0.0 ~ 1.0
+typedef float	vst_param_t;
+	
+struct VstProgram
+{
+	vst_param_t		cutoff_;
+	vst_param_t		db_gain_;
+	vst_param_t		Q_;	
+	vst_param_t		filter_type_;
+
+	std::string		name_;
+};
 
 struct MiniVstEffect
 	:	AudioEffectX
@@ -20,47 +30,22 @@ struct MiniVstEffect
 		kNumParams
 	};
 	
+	enum {
+		kNumChannels = 2
+	};
+	
 	//============================================================================//
 	//	ctor
 	//============================================================================//
 public:
 	MiniVstEffect	(audioMasterCallback audioMaster);
 	~MiniVstEffect	();
-
-	//============================================================================//
-	//	process (buffer to host)
-	//============================================================================//
-public:
-	virtual	void		processReplacing		(float **inputs, float **outputs, VstInt32 sampleFrames);
-	virtual	void		processDoubleReplacing	(double **inputs, double **outputs, VstInt32 sampleFrames);
-
-	//virtual	VstInt32	processEvents (VstEvents* events);
-
-	//============================================================================//
-	//	settings
-	//============================================================================//
-public:
-	//virtual	void		setSampleRate		(float sampleRate);
-	//virtual	float		getSampleRate		();
-
-	//virtual	void		setBlockSize		(VstInt32 blockSize);
-	//virtual	VstInt32	getBlockSize		();
-
-	//============================================================================//
-	//	i/o
-	//============================================================================//
-public:
-	//virtual	bool		getOutputProperties	(VstInt32 index, VstPinProperties* prop);
-
-	//============================================================================//
-	//	operations
-	//============================================================================//
-public:
-	//virtual	VstInt32	canDo				(char *text);
-	//virtual	void		open				();
-	//virtual	void		close				();
-	//virtual	void		supend				();
-	//virtual	void		resume				();
+	
+private:
+	//! コピー禁止
+	MiniVstEffect		(MiniVstEffect const &);
+	MiniVstEffect &
+			operator=	(MiniVstEffect const &);
 
 	//============================================================================//
 	//	parameters
@@ -89,22 +74,47 @@ public:
 	virtual	bool		getVendorString		(char *text);
 	virtual	bool		getProductString	(char *text);
 	virtual	VstInt32	getVendorVersion	();
-
+	
 	//============================================================================//
-	//	load/save
+	//	process (buffer to host)
 	//============================================================================//
 public:
-	//virtual	VstInt32	getChunk			(void **data, bool as_program = false);
-	//virtual	VstInt32	setChunk			(void *data, VstInt32 byteSize, bool as_program);
+	virtual	void		processReplacing		(float **inputs, float **outputs, VstInt32 sampleFrames);
+	virtual	void		processDoubleReplacing	(double **inputs, double **outputs, VstInt32 sampleFrames);
+
+	//============================================================================//
+	//	process
+	//============================================================================//
+private:
+	double	process(size_t channel, double input) const;
+	
+	double	b0_;
+	double	b1_;
+	double	b2_;
+	double	a0_;
+	double	a1_;
+	double	a2_;
+	double	mutable x_past_[kNumChannels][2];
+	double	mutable y_past_[kNumChannels][2];
 
 private:
-	struct	Impl;
-	std::auto_ptr<Impl>	pimpl_;
-
-	//! コピー不可
-	MiniVstEffect		(MiniVstEffect const &);
-	MiniVstEffect &
-			operator=	(MiniVstEffect const &);
+	void	clear_buffer		();
+	VstProgram &
+			get_current_program	();
+	VstProgram const &
+			get_current_program	() const;
+	void	reset_coeffs		();
+	
+	double	get_db_gain			() const;
+	double	get_cutoff			() const;
+	double	get_Q				() const;
+	size_t	get_filter_type		() const;
+	
+	double	get_sampling_rate	() const;
+			
+private:
+	double	sampling_rate_;	
+	VstProgram	cur_program_;
 };
 
 }	//namespace hwm
