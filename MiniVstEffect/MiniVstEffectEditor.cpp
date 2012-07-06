@@ -63,7 +63,6 @@ bool MiniVstEffectEditor::open(void *ptr)
 	CBitmap *bm_slider_back = new CBitmap(defines::kSliderBack);
 	CBitmap *bm_slider_handle = new CBitmap(defines::kSliderHandle);
 
-	size_t const slider_width = bm_slider_back->getWidth();
 	size_t const shift_width = bm_slider_back->getWidth() * 2;
 	
 	CRect frame_size(
