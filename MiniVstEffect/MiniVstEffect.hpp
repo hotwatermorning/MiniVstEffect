@@ -112,6 +112,8 @@ private:
 	void	reset_coeffs		();
 
 	//! 現在のパラメータの状態から、dBGainを取得
+	//! dBGainは、Peaking EQ, Low Shelving, High Shelving以外のフィルタでは
+	//! 使用されない
 	double	get_db_gain			() const;
 	//! 現在のパラメータの状態から、CutOffを正規化周波数で取得
 	double	get_cutoff			() const;
