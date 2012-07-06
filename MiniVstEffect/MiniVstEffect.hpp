@@ -9,6 +9,7 @@ namespace hwm {
 //! 0.0 ~ 1.0
 typedef float	vst_param_t;
 	
+//! プログラム
 struct VstProgram
 {
 	vst_param_t		cutoff_;
@@ -19,9 +20,12 @@ struct VstProgram
 	std::string		name_;
 };
 
+//! プラグイン本体
 struct MiniVstEffect
+	//! AudioEffectXクラスを継承する
 	:	AudioEffectX
 {
+	//! パラメータIDの定義
 	enum {
 		kCutOff,
 		kdBGain,
@@ -30,6 +34,8 @@ struct MiniVstEffect
 		kNumParams
 	};
 	
+	//! 入出力数の定義
+	//! シンセなどでは入力0／出力2などにしたりする
 	enum {
 		kNumChannels = 2
 	};
@@ -40,12 +46,6 @@ struct MiniVstEffect
 public:
 	MiniVstEffect	(audioMasterCallback audioMaster);
 	~MiniVstEffect	();
-	
-private:
-	//! コピー禁止
-	MiniVstEffect		(MiniVstEffect const &);
-	MiniVstEffect &
-			operator=	(MiniVstEffect const &);
 
 	//============================================================================//
 	//	parameters
@@ -65,6 +65,14 @@ public:
 	virtual void		setProgramName		(char* name);
 	virtual void		getProgramName		(char* name);
 	virtual bool		getProgramNameIndexed (VstInt32 category, VstInt32 index, char* text);
+	
+private:
+	VstProgram &
+			get_current_program	();
+	VstProgram const &
+			get_current_program	() const;
+			
+	VstProgram	cur_program_;
 
 	//============================================================================//
 	//	plugin info
@@ -76,45 +84,44 @@ public:
 	virtual	VstInt32	getVendorVersion	();
 	
 	//============================================================================//
-	//	process (buffer to host)
+	//	process
 	//============================================================================//
 public:
 	virtual	void		processReplacing		(float **inputs, float **outputs, VstInt32 sampleFrames);
 	virtual	void		processDoubleReplacing	(double **inputs, double **outputs, VstInt32 sampleFrames);
 
-	//============================================================================//
-	//	process
-	//============================================================================//
 private:
 	double	process(size_t channel, double input) const;
 	
+	//! bi-quadフィルタの係数
 	double	b0_;
 	double	b1_;
 	double	b2_;
 	double	a0_;
 	double	a1_;
 	double	a2_;
-	double	mutable x_past_[kNumChannels][2];
-	double	mutable y_past_[kNumChannels][2];
+	//! 遅延子
+	double	mutable x_[kNumChannels][2];
+	double	mutable y_[kNumChannels][2];
 
 private:
+	//! bi-quadフィルタの遅延子をクリア
 	void	clear_buffer		();
-	VstProgram &
-			get_current_program	();
-	VstProgram const &
-			get_current_program	() const;
+	
+	//! フィルタの係数を再計算
 	void	reset_coeffs		();
-	
+
+	//! 現在のパラメータの状態から、dBGainを取得
 	double	get_db_gain			() const;
+	//! 現在のパラメータの状態から、CutOffを正規化周波数で取得
 	double	get_cutoff			() const;
+	//! 現在のパラメータの状態から、Qを取得
 	double	get_Q				() const;
+	//! 現在のパラメータの状態から、フィルタのタイプを取得
 	size_t	get_filter_type		() const;
-	
+	//! AudioEffectXからサンプリング周波数を取得
 	double	get_sampling_rate	() const;
 			
-private:
-	double	sampling_rate_;	
-	VstProgram	cur_program_;
 };
 
 }	//namespace hwm

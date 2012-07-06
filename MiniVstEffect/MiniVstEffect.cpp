@@ -10,6 +10,7 @@
 namespace hwm {
 
 struct defines{
+
 	//! parameter index
 	enum {
 		kNumPrograms	= 8,
@@ -23,6 +24,7 @@ struct defines{
 
 	static char const *kProgNames[kNumPrograms];
 
+	//! フィルタタイプの定義
 	enum {
 		LPF,
 		HPF,
@@ -41,6 +43,8 @@ struct defines{
 	static double const kdBMax;
 	static double const kdBRange;
 	
+	
+	//! vstのパラメータ値をfilterのインデックスに
 	static
 	size_t	param_to_filter(vst_param_t value)
 	{
@@ -48,6 +52,7 @@ struct defines{
 			static_cast<size_t>(value * kNumFilterType - 0.5);
 	}
 	
+	//! filterのインデックスをvstのパラメータ値に
 	static
 	vst_param_t
 			filter_to_param(size_t filter)
@@ -55,12 +60,56 @@ struct defines{
 		return
 			static_cast<vst_param_t>((filter + 0.5) / kNumFilterType);
 	}
+	
+	//! パラメータとdB
+	static
+	double	param_to_db(vst_param_t value)
+	{
+		return 20.0 * log10(static_cast<double>(value * 4.0));
+	}
+
+	//! パラメータとdB
+	static
+	vst_param_t
+			db_to_param(double dB)
+	{
+		return
+			static_cast<vst_param_t>(pow(10.0, (dB)/20.0) / 4.0);
+	}
+
+	//! フィルタタイプから、そのフィルタを表す文字列を取得
+	static
+	char const *
+			get_filter_string(size_t filter_type)
+	{
+		switch(filter_type) {
+			case defines::LPF:
+				return "LPF";
+			case defines::HPF:
+				return "HPF";
+			case defines::BPF:
+				return "BPF";
+			case defines::notch:
+				return "notch";
+			case defines::APF:
+				return "APF";
+			case defines::PeakingEQ:
+				return "PeakEQ";
+			case defines::LowShelf:
+				return "Lo-Shelf";
+			case defines::HighShelf:
+				return "Hi-Shelf";
+		}
+		return "Unknown";
+	}
 };
 
 int	const defines::kID					= 'MVFx';
 char const *	defines::kVendor		= "hotwatermorning";
 char const *	defines::kProduct		= "Mini Vst Eq";
 char const *	defines::kEffect		= defines::kProduct;
+
+//! プラグインのプリセット
 VstProgram	const 
 				defines::presets[defines::kNumPrograms] = {
 	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::LPF), "Low Pass Filter"},
@@ -72,49 +121,10 @@ VstProgram	const
 	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::LowShelf), "Low Shelving Filter" },
 	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::HighShelf), "High Shelving Filter" }
 };
-	
-static
-double	param_to_db(vst_param_t value)
-{
-	return 20.0 * log10(static_cast<double>(value * 4.0));
-}
-
-static
-vst_param_t
-		db_to_param(double dB)
-{
-	return
-		static_cast<vst_param_t>(pow(10.0, (dB)/20.0) / 4.0);
-}
 
 double const	defines::kdBMin			= -100.0;
 double const	defines::kdBMax			= 20.0;
 double const	defines::kdBRange		= defines::kdBMax - defines::kdBMin;
-
-static
-char const *
-		get_filter_string(size_t filter_type)
-{
-	switch(filter_type) {
-		case defines::LPF:
-			return "LPF";
-		case defines::HPF:
-			return "HPF";
-		case defines::BPF:
-			return "BPF";
-		case defines::notch:
-			return "notch";
-		case defines::APF:
-			return "APF";
-		case defines::PeakingEQ:
-			return "PeakEQ";
-		case defines::LowShelf:
-			return "Lo-Shelf";
-		case defines::HighShelf:
-			return "Hi-Shelf";
-	}
-	return "Unknown";
-}
 
 //! MiniVstEffectの実装
 MiniVstEffect::MiniVstEffect(audioMasterCallback audioMaster)
@@ -129,15 +139,23 @@ MiniVstEffect::MiniVstEffect(audioMasterCallback audioMaster)
 	,	a1_(0.0)
 	,	a2_(0.0)
 {	
+	//! 出入力チャンネルの設定
 	setNumInputs(kNumChannels);
 	setNumOutputs(kNumChannels);
 
+	//! processReplacingが使用できることを表明
 	canProcessReplacing();
+	
+	//! processDoubleReplacingが使用できることを表明
 	canDoubleReplacing();
+	
+	//! uniqueIDの設定
 	setUniqueID(defines::kID);
 	
+	//! Editorの設定
 	editor = new MiniVstEffectEditor(this);
-	
+
+	//! 先頭のプログラムを設定しておく
 	setProgram(0);
 }
 
@@ -264,7 +282,7 @@ void	MiniVstEffect::getParameterDisplay(VstInt32 index, char *label)
 			break;
 
 		case kFilterType:
-			ss << get_filter_string(get_filter_type());
+			ss << defines::get_filter_string(get_filter_type());
 			break;
 	}
 
@@ -315,16 +333,17 @@ VstInt32
 	return defines::kVendorVersion;
 }
 
+//! reset_coeffsで設定した係数を元に、IIRフィルタをかける
 double	MiniVstEffect::process	(size_t channel, double input) const
 {
 	double const ret =
-		(b0_/a0_) * input + (b1_/a0_) * x_past_[channel][0] + (b2_/a0_) * x_past_[channel][1]
-						 - (a1_/a0_) * y_past_[channel][0] - (a2_/a0_) * y_past_[channel][1];
+		(b0_/a0_) * input + (b1_/a0_) * x_[channel][0] + (b2_/a0_) * x_[channel][1]
+						 - (a1_/a0_) * y_[channel][0] - (a2_/a0_) * y_[channel][1];
 
-		x_past_[channel][1] = x_past_[channel][0];
-		x_past_[channel][0] = input;
-		y_past_[channel][1] = y_past_[channel][0];
-		y_past_[channel][0] = ret;
+		x_[channel][1] = x_[channel][0];
+		x_[channel][0] = input;
+		y_[channel][1] = y_[channel][0];
+		y_[channel][0] = ret;
 		
 	return ret;
 }
@@ -371,7 +390,7 @@ void	MiniVstEffect::clear_buffer()
 {
 	for(size_t ch = 0; ch < kNumChannels; ++ch) {
 		for(size_t i = 0; i < 2; ++i) {
-			x_past_[ch][i] = y_past_[ch][i] = 0.0;
+			x_[ch][i] = y_[ch][i] = 0.0;
 		}
 	}
 }
@@ -465,7 +484,7 @@ void	MiniVstEffect::reset_coeffs	()
 double	MiniVstEffect::get_db_gain		() const
 {
 	return
-		param_to_db(get_current_program().db_gain_);
+		defines::param_to_db(get_current_program().db_gain_);
 }
 
 //! @return normalized cutoff frequency
