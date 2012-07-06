@@ -117,9 +117,9 @@ VstProgram	const
 	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::BPF), "Band Pass Filter"},
 	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::notch), "notch Filter"},
 	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::APF), "All-Pass Filter"},
-	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::PeakingEQ), "peaking EQ" },
-	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::LowShelf), "Low Shelving Filter" },
-	{ 0.5, 0.0, 0.0, defines::filter_to_param(defines::HighShelf), "High Shelving Filter" }
+	{ 0.5, defines::db_to_param(0.0), 0.0, defines::filter_to_param(defines::PeakingEQ), "peaking EQ" },
+	{ 0.5, defines::db_to_param(0.0), 0.0, defines::filter_to_param(defines::LowShelf), "Low Shelving Filter" },
+	{ 0.5, defines::db_to_param(0.0), 0.0, defines::filter_to_param(defines::HighShelf), "High Shelving Filter" }
 };
 
 double const	defines::kdBMin			= -100.0;
