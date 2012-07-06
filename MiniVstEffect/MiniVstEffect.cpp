@@ -133,6 +133,7 @@ MiniVstEffect::MiniVstEffect(audioMasterCallback audioMaster)
 	setNumOutputs(kNumChannels);
 
 	canProcessReplacing();
+	canDoubleReplacing();
 	setUniqueID(defines::kID);
 	
 	editor = new MiniVstEffectEditor(this);
