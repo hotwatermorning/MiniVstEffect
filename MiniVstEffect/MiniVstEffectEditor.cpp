@@ -276,12 +276,9 @@ void MiniVstEffectEditor::valueChanged(CDrawContext *context, CControl *control)
 	}
 }
 
-//*
 void MiniVstEffectEditor::idle()
 {
 	frame->redraw();
 }
-//*/
-
 
 }	//namespace hwm

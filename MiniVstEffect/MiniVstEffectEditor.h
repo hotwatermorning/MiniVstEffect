@@ -22,9 +22,7 @@ struct MiniVstEffectEditor
 	virtual void	close();
 	virtual void	setParameter(VstInt32 index, float value);
 	virtual void	valueChanged(CDrawContext *context, CControl *control);	
-	//*
 	virtual void	idle();
-	//*/
 	
 private:
 	CSlider	*freq_;
